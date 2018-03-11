@@ -50,6 +50,10 @@ def register(builder):
     _registeredBuilders.append(builder)
 
 def bidAndBuild(site):
+    SITE_BORDER = (2, 10, 2)
+
+    clearAboveSurface( site.level, site.bounds.expand(*SITE_BORDER) )
+
     builders = BuilderCollective(*_registeredBuilders)
     for plot in site.plots:
         if builders.askInterest(plot):
@@ -58,6 +62,9 @@ def bidAndBuild(site):
     for plot in site.plots:
         if hasattr(plot, 'builder'):
             plot.builder.build(plot)
+
+    for chunkPos in site.bounds.expand(*SITE_BORDER).chunkPositions:
+        site.level.getChunk(*chunkPos).needsLighting = True
 
 ########################################################################
 
@@ -161,6 +168,13 @@ def buildAcre(plot):
 
 register( Builder(acreIF, noop, buildAcre) )
 register( Builder(acreIF, noop, noop) )
+
+########################################################################
+
+def clearAboveSurface(level, box):
+    for ground in level.groundPositions(box, ignoreBlocks=NON_SURFACE_BLOCKS):
+        for y in range(ground.y+1, box.maxy):
+            level.setMaterialAt( (ground.x, y, ground.z), materials.Air )
 
 ########################################################################
 

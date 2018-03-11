@@ -25,7 +25,8 @@ BLOCK_TYPES = [
 
 BLOCK_TYPES_GROWTHS = [u'HUGE_MUSHROOM', u'DECORATION_CROSS', u'LEAVES', u'CROPS', u'VINE', u'STEM']
 
-NON_GROUND_BLOCKS = materials.blocksMatching("water") + materials.blocksMatching("air") + \
-    materials.blocksMatching("snow") + materials.blocksMatching("log")
+NON_SURFACE_BLOCKS  = materials.blocksMatching("air") + materials.blocksMatching("snow") + materials.blocksMatching("log")
 for t in BLOCK_TYPES_GROWTHS:
-    NON_GROUND_BLOCKS.extend( materials.blocksByType[t] )
+    NON_SURFACE_BLOCKS.extend( materials.blocksByType[t] )
+
+NON_GROUND_BLOCKS = materials.blocksMatching("water") + NON_SURFACE_BLOCKS

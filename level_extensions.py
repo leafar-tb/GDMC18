@@ -50,9 +50,9 @@ def groundPositionAt(level, (x,y,z), ignoreBlocks=NON_GROUND_BLOCKS):
     return Vector(x,y,z)
 
 @injected
-def groundPositions(level, box, doBoxClip=False):
+def groundPositions(level, box, doBoxClip=False, ignoreBlocks=NON_GROUND_BLOCKS):
     for pos in bu.ceiling(box).positions:
         if doBoxClip:
-            yield bu.clip(groundPositionAt(level, pos), box)
+            yield bu.clip(groundPositionAt(level, pos, ignoreBlocks), box)
         else:
-            yield groundPositionAt(level, pos)
+            yield groundPositionAt(level, pos, ignoreBlocks)
