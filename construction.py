@@ -102,8 +102,9 @@ def buildRoad(plot):
     else:
         paveplot = plot.expand(0, 0, -1)
 
+    pavemat = plot.site.stoneTypes.mostCommon()
     for ground in plot.level.groundPositions(paveplot):
-        plot.level.setMaterialAt(ground, plot.site.stoneTypes.random())
+        plot.level.setMaterialAt(ground, pavemat)
 
 register( Builder(roadIF, noop, buildRoad) )
 

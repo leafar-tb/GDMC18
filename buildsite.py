@@ -1,5 +1,8 @@
+from __future__ import division
 import random
 import numpy as np
+from collections import defaultdict
+from types import FunctionType
 from pymclevel import BoundingBox
 
 from myglobals import materials
@@ -126,11 +129,62 @@ class WeightDict(dict):
         else:
             return self.default
 
+    def mostCommon(self):
+        if not self or not sum(self.values()):
+            return default
+        maxWeight = max(self.values())
+        for key, weight in self.items():
+            if maxWeight == weight:
+                return key
+
+    def leastCommon(self):
+        if not self or not sum(self.values()):
+            return default
+        minWeight = min(self.values())
+        for key, weight in self.items():
+            if minWeight == weight:
+                return key
+
+    def isNonZero(self, key):
+        return key in self and self[key] != 0
+
+    def hasNonZero(self):
+        return any( weight != 0 for weight in self.values() )
+
+########################################################################
+
+def countMaterialsIn(level, box):
+    mats = defaultdict(int)
+    for pos in box.positions:
+        mats[ level.materialAt(pos) ] += 1
+    return WeightDict(materials.Air, mats)
+
+########################################################################
+
+def woodTypes(site):
+    counts = defaultdict(int)
+    for material in site.blockCounts:
+        if ' Wood ' in material.name:
+            type = material.name.split(' Wood ')[0]
+            counts[type] += site.blockCounts[material]
+    return WeightDict('Oak', counts)
+
+STONE_TYPES = [ materials[name] for name in ['Stone', 'Granite', 'Diorite', 'Andesite', 'Sandstone', 'Cobblestone', 'Moss Stone'] ]
+
+def weightDictFor(default, blockTypes):
+    def apply(site):
+        weights = WeightDict(default)
+        for block in blockTypes:
+            if block in site.blockCounts:
+                weights[block] = site.blockCounts[block]
+        return weights
+    return apply
+
 ########################################################################
 
 DefaultSiteInfo = {
-    'stoneTypes'    : WeightDict(materials.Stone),
-    'woodTypes'     : WeightDict('Oak'),
+    'stoneTypes'    : weightDictFor(materials.Stone, STONE_TYPES),
+    'woodTypes'     : woodTypes,
     'climate'       : 'medium',
     'season'        : 'spring',
     'minPlotDim'    : 5,
@@ -142,8 +196,13 @@ class Site(object):
     def __init__(self, level, siteBox, registrar=splitIntoPlots, **kwargs):
         self.level = level
         self.bounds = siteBox
+        self.blockCounts = countMaterialsIn( level, siteBox.expand(*siteBox.size) )
+
         for key in DefaultSiteInfo:
-            setattr( self, key, kwargs.get(key, DefaultSiteInfo[key]) )
+            val = kwargs.get(key, DefaultSiteInfo[key])
+            if isinstance(val, FunctionType):
+                val = val(self)
+            setattr( self, key, val )
 
         self.plots = registrar(self)
         fillInPlotNeighbours(self.plots)
