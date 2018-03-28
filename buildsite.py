@@ -131,7 +131,7 @@ class WeightDict(dict):
 
     def mostCommon(self):
         if not self or not sum(self.values()):
-            return default
+            return self.default
         maxWeight = max(self.values())
         for key, weight in self.items():
             if maxWeight == weight:
@@ -139,7 +139,7 @@ class WeightDict(dict):
 
     def leastCommon(self):
         if not self or not sum(self.values()):
-            return default
+            return self.default
         minWeight = min(self.values())
         for key, weight in self.items():
             if minWeight == weight:
