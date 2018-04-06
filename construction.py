@@ -128,18 +128,7 @@ def houseIF(plot):
 def markHouse(plot):
     plot.tags.append('house')
 
-def buildHouse(plot):
-    matName = plot.site.woodTypes.random()
-    MAT_WALLS = materials[matName+" Wood Planks"]
-
-    level = plot.level
-    level.fill(bu.ceiling(plot), MAT_WALLS)
-    level.fill(bu.floor(plot), MAT_WALLS)
-    for wall in bu.walls(plot):
-        level.fill(wall, MAT_WALLS)
-        placeWindows(level, wall)
-
-    placeDoor( level, Vector(plot.minx, plot.miny+1, (plot.minz + plot.maxz)/2), Direction.East, matName )
+from house import buildHouse
 
 register( Builder(houseIF, markHouse, buildHouse) )
 
@@ -175,35 +164,3 @@ def clearAboveSurface(level, box):
     for ground in level.groundPositions(box, ignoreBlocks=NON_SURFACE_BLOCKS):
         for y in range(ground.y+1, box.maxy):
             level.setMaterialAt( (ground.x, y, ground.z), materials.Air )
-
-########################################################################
-
-DOOR_LOWER_DATA = {
-    Direction.East  : 0,
-    Direction.South : 1,
-    Direction.West  : 2,
-    Direction.North : 3
-}
-
-def placeDoor(level, position, direction, materialName):
-    materialId = materials[materialName + ' Door (Lower, Unopened, East)'].ID
-    level.setMaterialAt(position, (materialId, DOOR_LOWER_DATA[direction]))
-    level.setMaterialAt(position+Direction.Up, (materialId, 8)) # 8 => upper door with unpowered left hinge
-
-def placeWindows(level, wall):
-    MAT_WINDOWS = materials["Glass"]
-
-    wall2D = bu.BoundingBox2D(wall)
-    wall2D = wall2D.expand(-1, -1) # remove corners, floor and ceiling
-
-    if wall2D.width < 2 or wall2D.height < 2:
-        return
-
-    for x in range(0, wall2D.width-1, 3):
-            level.setMaterialAt(wall2D[x, 1], MAT_WINDOWS)
-            level.setMaterialAt(wall2D[x+1, 1], MAT_WINDOWS)
-
-    if wall2D.height >= 4:
-        for x in range(0, wall2D.width-1, 3):
-            level.setMaterialAt(wall2D[x, 2], MAT_WINDOWS)
-            level.setMaterialAt(wall2D[x+1, 2], MAT_WINDOWS)
