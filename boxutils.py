@@ -29,8 +29,31 @@ def wall(box, direction):
     if direction == Direction.Down:
         return floor(box)
 
+def floor2D(box):
+    return BoundingBox2D(floor(box))
+
+def ceilling2D(box):
+    return BoundingBox2D(ceilling(box))
+
+def wall2D(box, direction):
+    return BoundingBox2D(wall(box, direction))
+
+def walls2D(box):
+    return [ BoundingBox2D(w) for w in walls(box) ]
+
 def clip(position, box):
     return Vector( npclip( position, box.origin, box.maximum - Vector(1,1,1)) )
+
+########################################################################
+
+def expandMin(box, dx=0, dy=0, dz=0):
+    return BoundingBox(box.origin - (dx,dy,dz), box.size + (dx,dy,dz))
+
+def expandMax(box, dx=0, dy=0, dz=0):
+    return BoundingBox(box.origin, box.size + (dx,dy,dz))
+
+def move(box, dx=0, dy=0, dz=0):
+    return BoundingBox(box.origin + (dx, dy, dz), box.size)
 
 ########################################################################
 
@@ -67,6 +90,25 @@ def doTouch(box1, box2):
             and doIntervalsOverlap(box1.origin[(axis+2)%3], box1.maximum[(axis+2)%3], box2.origin[(axis+2)%3], box2.maximum[(axis+2)%3]):
                 return True
     return False
+
+def touchDirection(fromBox, toBox):
+    if not doTouch(fromBox, toBox):
+        return None
+
+    if fromBox.maxx == toBox.minx:
+        return Direction.East
+    if fromBox.minx == toBox.maxx:
+        return Direction.West
+
+    if fromBox.maxy == toBox.miny:
+        return Direction.Up
+    if fromBox.miny == toBox.maxy:
+        return Direction.Down
+
+    if fromBox.maxz == toBox.minz:
+        return Direction.South
+    if fromBox.minz == toBox.maxz:
+        return Direction.North
 
 def doOverlap(box1, box2):
     return box1.intersect(box2).volume != 0
