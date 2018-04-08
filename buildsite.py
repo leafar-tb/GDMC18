@@ -154,10 +154,25 @@ class WeightDict(dict):
 ########################################################################
 
 def countMaterialsIn(level, box):
-    mats = defaultdict(int)
-    for pos in box.positions:
-        mats[ level.materialAt(pos) ] += 1
-    return WeightDict(materials.Air, mats)
+    # counting block by block is too much overhead, so we process full chunks
+    # this approach may not match the given bounds exactly, though
+    tmpMatDict = defaultdict(int)
+    for cx, cz in box.chunkPositions:
+        chunk = level.getChunk(cx, cz)
+        # we first use (ID, data) tuples as material identifiers
+        uniques, counts = np.unique(zip( chunk.Blocks[:, :, box.miny:box.maxy].flat, chunk.Data[:, :, box.miny:box.maxy].flat ), return_counts = True)
+        for ui, ci in zip(uniques, counts):
+            tmpMatDict[ui] += ci
+
+    # actually, we want to return the material objects (class Block from pymclevel/materials.py)
+    # looking up the materials after aggregation significantly reduces the number of queries
+    matDict = WeightDict(materials.Air)
+    for matTuple in tmpMatDict:
+        matObj = materials[matTuple]
+        assert matObj not in matDict # different IDs mapped to the same material?!
+        matDict[ matObj ] = tmpMatDict[ matTuple ]
+
+    return matDict
 
 ########################################################################
 
