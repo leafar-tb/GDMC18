@@ -5,7 +5,7 @@ from collections import defaultdict
 from types import FunctionType
 from pymclevel import BoundingBox
 
-from myglobals import materials
+from myglobals import *
 import boxutils as bu
 
 ########################################################################
@@ -206,3 +206,43 @@ class Site(object):
 
         self.plots = registrar(self)
         fillInPlotNeighbours(self.plots)
+
+        # cache ground/surface heights for faster access
+        self.floor = bu.floor2D(siteBox)
+
+        self.groundHeights = np.array( list(
+            list( level.groundPositionAt((x, siteBox.maxy, z), ignoreBlocks=NON_GROUND_BLOCKS).y for x in range(siteBox.minx, siteBox.maxx) )
+                for z in range(siteBox.minz, siteBox.maxz) ) )
+
+        self.surfaceHeights = np.array( list(
+            list( level.groundPositionAt((x, siteBox.maxy, z), ignoreBlocks=NON_SURFACE_BLOCKS).y for x in range(siteBox.minx, siteBox.maxx) )
+                for z in range(siteBox.minz, siteBox.maxz) ) )
+
+    def groundHeightAt(self, pos):
+        x, z = self.floor.project(pos)
+        if x in range(self.bounds.width) and z in range(self.bounds.length):
+            return self.groundHeights[z][x]
+        else:
+            return self.level.groundPositionAt(pos, ignoreBlocks=NON_GROUND_BLOCKS).y
+
+    def groundPositionAt(self, (x,y,z)):
+        return Vector(x, self.groundHeightAt((x,y,z)), z)
+
+    def groundPositions(self, box):
+        return map(self.groundPositionAt, bu.ceiling(box).positions )
+
+    def surfaceHeightAt(self, pos):
+        x, z = self.floor.project(pos)
+        if x in range(self.bounds.width) and z in range(self.bounds.length):
+            return self.surfaceHeights[z][x]
+        else:
+            return self.level.groundPositionAt(pos, ignoreBlocks=NON_SURFACE_BLOCKS).y
+
+    def surfacePositionAt(self, (x,y,z)):
+        return Vector(x, self.surfaceHeightAt((x,y,z)), z)
+
+    def surfacePositions(self, box):
+        return map(self.surfacePositionAt, bu.ceiling(box).positions )
+
+    def waterDepthAt(self, pos):
+        return self.surfaceHeightAt(pos) - self.groundHeightAt(pos)

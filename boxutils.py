@@ -1,4 +1,4 @@
-from numpy import clip as npclip
+import numpy as np
 from pymclevel import BoundingBox
 
 from myglobals import Vector, Direction
@@ -42,7 +42,7 @@ def walls2D(box):
     return [ BoundingBox2D(w) for w in walls(box) ]
 
 def clip(position, box):
-    return Vector( npclip( position, box.origin, box.maximum - Vector(1,1,1)) )
+    return Vector( np.clip( position, box.origin, box.maximum - Vector(1,1,1)) )
 
 ########################################################################
 
@@ -165,3 +165,9 @@ class BoundingBox2D:
         offset[self.x_axis] = x
         offset[self.y_axis] = y
         return self.box.origin + Vector( *offset )
+
+    def project(self, pos3d):
+        "Project a 3d position into the 2d coordinate system of this BB"
+        x2d = pos3d[self.x_axis] - self.box.origin[self.x_axis]
+        y2d = pos3d[self.y_axis] - self.box.origin[self.y_axis]
+        return x2d, y2d

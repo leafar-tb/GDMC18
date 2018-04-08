@@ -52,7 +52,7 @@ def register(builder):
 def bidAndBuild(site):
     SITE_BORDER = (2, 10, 2)
 
-    clearAboveSurface( site.level, site.bounds.expand(*SITE_BORDER) )
+    clearAboveSurface( site, site.bounds.expand(*SITE_BORDER) )
 
     builders = BuilderCollective(*_registeredBuilders)
     for plot in site.plots:
@@ -110,7 +110,7 @@ def buildRoad(plot):
         paveplot = plot.expand(0, 0, -1)
 
     pavemat = plot.site.stoneTypes.mostCommon()
-    for ground in plot.level.groundPositions(paveplot):
+    for ground in plot.site.surfacePositions(paveplot):
         plot.level.setMaterialAt(ground, pavemat)
 
 register( Builder(roadIF, noop, buildRoad) )
@@ -151,7 +151,7 @@ def acreIF(plot):
 
 def buildAcre(plot):
     crop = np.random.choice(crops)
-    for ground in plot.level.groundPositions(plot):
+    for ground in plot.site.surfacePositions(plot):
         plot.level.setMaterialAt(ground, soil)
         plot.level.setMaterialAt(ground+Direction.Up, crop)
 
@@ -160,7 +160,8 @@ register( Builder(acreIF, noop, noop) )
 
 ########################################################################
 
-def clearAboveSurface(level, box):
-    for ground in level.groundPositions(box, ignoreBlocks=NON_SURFACE_BLOCKS):
+def clearAboveSurface(site, box):
+    level = site.level
+    for ground in site.surfacePositions(box):
         for y in range(ground.y+1, box.maxy):
             level.setMaterialAt( (ground.x, y, ground.z), materials.Air )
