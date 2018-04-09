@@ -24,7 +24,7 @@ class House:
 
         # front is towards the widest road
         if not plot.hasNeighbourWithTag('road'):
-            self.front = np.random.choice(Direction.North, Direction.East, Direction.South, Direction.West)
+            self.front = random.choice( [Direction.North, Direction.East, Direction.South, Direction.West] )
         else:
             widestRoad = max( plot.neighboursWithTag('road'), key=lambda road: min(road.width, road.length))
             self.front = bu.touchDirection(plot, widestRoad)

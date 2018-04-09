@@ -3,7 +3,7 @@ import random
 import numpy as np
 from collections import defaultdict
 from types import FunctionType
-from pymclevel import BoundingBox
+from pymclevel import BoundingBox, ChunkNotPresent
 
 from myglobals import *
 import boxutils as bu
@@ -158,7 +158,10 @@ def countMaterialsIn(level, box):
     # this approach may not match the given bounds exactly, though
     tmpMatDict = defaultdict(int)
     for cx, cz in box.chunkPositions:
-        chunk = level.getChunk(cx, cz)
+        try:
+            chunk = level.getChunk(cx, cz)
+        except ChunkNotPresent:
+            continue
         # we first use (ID, data) tuples as material identifiers
         uniques, counts = np.unique(zip( chunk.Blocks[:, :, box.miny:box.maxy].flat, chunk.Data[:, :, box.miny:box.maxy].flat ), return_counts = True)
         for ui, ci in zip(uniques, counts):
