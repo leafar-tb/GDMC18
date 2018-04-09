@@ -170,7 +170,7 @@ def placeWindows(level, wall):
     MAT_WINDOWS = materials["Glass"]
 
     wall2D = bu.BoundingBox2D(wall)
-    wall2D = wall2D.expand(-1, -1) # remove corners, floor and ceiling
+    wall2D = wall2D.expand(-1, 0) # remove corners
 
     if wall2D.width < 2 or wall2D.height < 2:
         return
