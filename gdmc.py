@@ -12,13 +12,44 @@ from construction import bidAndBuild
 # name to show in filter list
 displayName = "Settlement Generator"
 
+P_OVERRIDE_SIZE = "Override Selection Size"
+P_WIDTH = "Width"
+P_LENGTH = "Length"
+
 inputs = (
 	(displayName, "label"),
+	("\nUse these settings, to make sure the selection has a minimum size. (Mostly dev convenience)", "label"),
+	(P_OVERRIDE_SIZE, True),
+	(P_WIDTH, 128),
+	(P_LENGTH, 128),
 	)
 
+def profile(func):
+    import profile
+    def profWrapper(*args, **kwargs):
+	pr = profile.Profile()
+	rVal = pr.runcall(func, *args, **kwargs)
+	pr.print_stats("time")
+	return rVal
+    return profWrapper
+
+#@profile
 def perform(level, box, options):
     LVinject(level)
+
+    if options[P_OVERRIDE_SIZE]:
+	# expand adds on both ends, so we take the half; possible one off from rounding doesn't matter
+	if box.width < options[P_WIDTH]:
+	    box = box.expand( (options[P_WIDTH] - box.width) / 2, 0, 0)
+	if box.length < options[P_LENGTH]:
+	    box = box.expand( 0, 0, (options[P_LENGTH] - box.length) / 2)
 
     site = Site(level, box)
 
     bidAndBuild(site)
+
+    # due to size override, we might have been working outside the actual selection
+    # but these don't seem to trigger an update
+    #for cx, cz in box.chunkPositions:
+    #    level.getChunk(cx, cz).dirty = True
+    #level.markDirtyBox(box)
