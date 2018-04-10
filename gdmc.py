@@ -15,6 +15,7 @@ displayName = "Settlement Generator"
 P_OVERRIDE_SIZE = "Override Selection Size"
 P_WIDTH = "Width"
 P_LENGTH = "Length"
+P_HEIGHT = "Height"
 
 inputs = (
 	(displayName, "label"),
@@ -22,7 +23,8 @@ inputs = (
 	(P_OVERRIDE_SIZE, True),
 	(P_WIDTH, 128),
 	(P_LENGTH, 128),
-	)
+	(P_HEIGHT, 16),
+    )
 
 def profile(func):
     import profile
@@ -33,16 +35,29 @@ def profile(func):
 	return rVal
     return profWrapper
 
+def takeTime(func):
+    import time
+    def timeWrapper(*args, **kwargs):
+	tstart = time.clock()
+	rVal = func(*args, **kwargs)
+	tend = time.clock()
+	print func.__name__, "took", tend-tstart, "seconds"
+	return rVal
+    return timeWrapper
+
 #@profile
+@takeTime
 def perform(level, box, options):
     LVinject(level)
 
     if options[P_OVERRIDE_SIZE]:
 	# expand adds on both ends, so we take the half; possible one off from rounding doesn't matter
 	if box.width < options[P_WIDTH]:
-	    box = box.expand( (options[P_WIDTH] - box.width) / 2, 0, 0)
+	    box = box.expand( (options[P_WIDTH] - box.width) / 2, 0, 0 )
+	if box.height < options[P_HEIGHT]:
+	    box = box.expand( 0, (options[P_HEIGHT] - box.height) / 2, 0 )
 	if box.length < options[P_LENGTH]:
-	    box = box.expand( 0, 0, (options[P_LENGTH] - box.length) / 2)
+	    box = box.expand( 0, 0, (options[P_LENGTH] - box.length) / 2 )
 
     site = Site(level, box)
 

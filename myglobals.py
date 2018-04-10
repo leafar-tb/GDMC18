@@ -26,8 +26,8 @@ BLOCK_TYPES = [
 BLOCK_TYPES_GROWTHS = [u'HUGE_MUSHROOM', u'DECORATION_CROSS', u'LEAVES', u'CROPS', u'VINE', u'STEM']
 
 # type FLOOR is for redstone wire and lily pads
-NON_SURFACE_BLOCKS  = [materials.Air] + materials.blocksMatching("snow") + materials.blocksMatching("log") + \
+NON_SURFACE_BLOCKS  = set( [materials.Air] + materials.blocksMatching("snow") + materials.blocksMatching("log") + \
         materials.blocksByType["FLOOR"] + \
-        list(btype for btypeClass in BLOCK_TYPES_GROWTHS for btype in materials.blocksByType[btypeClass])
+        list(btype for btypeClass in BLOCK_TYPES_GROWTHS for btype in materials.blocksByType[btypeClass]) )
 
-NON_GROUND_BLOCKS = materials.blocksMatching("water") + NON_SURFACE_BLOCKS
+NON_GROUND_BLOCKS = NON_SURFACE_BLOCKS.union( materials.blocksMatching("water") )
