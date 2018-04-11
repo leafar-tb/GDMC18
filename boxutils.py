@@ -77,17 +77,22 @@ def splitAlongAxisAt(box, axis, position, isWorldPosition=False):
 
 ########################################################################
 
-def doTouch(box1, box2):
-    def liesIn(val, min, max):
-        return val >= min and val < max
-    def doIntervalsOverlap(min1, max1, min2, max2):
-        return liesIn(min1, min2, max2) or liesIn(max1-1, min2, max2) \
-            or liesIn(min2, min1, max1) or liesIn(max2-1, min1, max1)
+def _liesIn(val, min, max):
+    return val >= min and val < max
 
+def _doIntervalsOverlap(min1, max1, min2, max2):
+    return _liesIn(min1, min2, max2) or _liesIn(max1-1, min2, max2) \
+        or _liesIn(min2, min1, max1) or _liesIn(max2-1, min1, max1)
+
+def doTouch(box1, box2):
+    origin1 = box1.origin
+    maximum1 = box1.maximum
+    origin2 = box2.origin
+    maximum2 = box2.maximum
     for axis in range(3):
-        if ( box1.origin[axis] == box2.maximum[axis] or box1.maximum[axis] == box2.origin[axis] ) \
-            and doIntervalsOverlap(box1.origin[(axis+1)%3], box1.maximum[(axis+1)%3], box2.origin[(axis+1)%3], box2.maximum[(axis+1)%3]) \
-            and doIntervalsOverlap(box1.origin[(axis+2)%3], box1.maximum[(axis+2)%3], box2.origin[(axis+2)%3], box2.maximum[(axis+2)%3]):
+        if ( origin1[axis] == maximum2[axis] or maximum1[axis] == origin2[axis] ) \
+            and _doIntervalsOverlap(origin1[(axis+1)%3], maximum1[(axis+1)%3], origin2[(axis+1)%3], maximum2[(axis+1)%3]) \
+            and _doIntervalsOverlap(origin1[(axis+2)%3], maximum1[(axis+2)%3], origin2[(axis+2)%3], maximum2[(axis+2)%3]):
                 return True
     return False
 

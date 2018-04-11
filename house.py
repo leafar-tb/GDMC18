@@ -19,7 +19,7 @@ class House:
 
     def __init__(self, plot, **kwargs):
         self.plot = plot
-        groundlevel = int( np.mean( [ pos.y for pos in plot.level.groundPositions(plot) ] ) )
+        groundlevel = int( np.mean( [ pos.y for pos in plot.site.surfacePositions(plot) ] ) )
         self.box = BoundingBox( (plot.minx, groundlevel, plot.minz), plot.size )
 
         # front is towards the widest road
@@ -60,7 +60,7 @@ def filledFoundation(house):
     fillMat = house.site.stoneTypes.mostCommon()
 
     for pos in bu.floor( house.box ).positions:
-        ground = house.level.groundPositionAt(pos)
+        ground = house.site.groundPositionAt(pos)
         for y in range(ground.y+1, pos[1]):
             house.level.setMaterialAt((pos[0], y, pos[2]), fillMat)
 
