@@ -209,6 +209,20 @@ DefaultSiteInfo = {
     'maxPlotDim'    : 20,
 }
 
+def fastHeightAt(level, (x,y,z), ignoreIDs):
+    cx = x >> 4
+    cz = z >> 4
+    xInChunk = x & 0xf
+    zInChunk = z & 0xf
+    chunkSlice = level.getChunk(cx, cz).Blocks[xInChunk, zInChunk, :]
+    # go down until we hit ground
+    while chunkSlice[y] in ignoreIDs:
+        y -= 1
+    # go up until there is no ground above
+    while chunkSlice[y+1] not in ignoreIDs:
+        y += 1
+    return y
+
 class Site(object):
 
     def __init__(self, level, siteBox, registrar=splitIntoPlots, **kwargs):
@@ -228,12 +242,14 @@ class Site(object):
         # cache ground/surface heights for faster access
         self.floor = bu.floor2D(siteBox)
 
+        NON_GROUND_IDS = set( block.ID for block in NON_GROUND_BLOCKS )
         self.groundHeights = np.array( list(
-            list( level.groundPositionAt((x, siteBox.maxy, z), ignoreBlocks=NON_GROUND_BLOCKS).y for x in range(siteBox.minx, siteBox.maxx) )
+            list( fastHeightAt(level, (x, siteBox.maxy, z), NON_GROUND_IDS) for x in range(siteBox.minx, siteBox.maxx) )
                 for z in range(siteBox.minz, siteBox.maxz) ) )
 
+        NON_SURFACE_IDS = set( block.ID for block in NON_SURFACE_BLOCKS )
         self.surfaceHeights = np.array( list(
-            list( level.groundPositionAt((x, siteBox.maxy, z), ignoreBlocks=NON_SURFACE_BLOCKS).y for x in range(siteBox.minx, siteBox.maxx) )
+            list( fastHeightAt(level, (x, self.groundHeights[z][x], z), NON_SURFACE_IDS) for x in range(siteBox.minx, siteBox.maxx) )
                 for z in range(siteBox.minz, siteBox.maxz) ) )
 
     def groundHeightAt(self, pos):
