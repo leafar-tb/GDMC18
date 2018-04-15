@@ -211,8 +211,7 @@ def weightDictFor(default, blockTypes):
 DefaultSiteInfo = {
     'stoneTypes'    : weightDictFor(materials.Stone, STONE_TYPES),
     'woodTypes'     : woodTypes,
-    'climate'       : 'medium',
-    'season'        : 'spring',
+    'season'        : lambda _: random.choice(['spring', 'summer', 'autumn', 'winter']),
     'minPlotDim'    : 5,
     'maxPlotDim'    : 20,
 }
@@ -259,6 +258,36 @@ class Site(object):
         self.surfaceHeights = np.array( list(
             list( fastHeightAt(level, (x, self.groundHeights[z-siteBox.minz][x-siteBox.minx], z), NON_SURFACE_IDS) for x in range(siteBox.minx, siteBox.maxx) )
                 for z in range(siteBox.minz, siteBox.maxz) ) )
+
+        # gather biome information; biomes are stored as an ID; mapping is found in pymclevel/biome_types.py or online
+        tmpBiomeDict = defaultdict(int)
+        for cpos in siteBox.chunkPositions:
+            uniques, counts = np.unique(level.getChunk(*cpos).Biomes, return_counts = True)
+            for ui, ci in zip(uniques, counts):
+                tmpBiomeDict[ui] += ci
+        self.biomes = WeightDict(1, tmpBiomeDict) # Biome(1) = Plains
+
+        # compile temperature info; range is [-0.5, 2.0]
+        # mostly taken from from MC wiki; actual temperature also linked to height
+        TEMPERATURE_BY_BIOME = ( [ # basic biomes
+                .5, .8,   2,  .2, .7, .25,  .8,  .5,
+                 0,  0,  .0,  .0, .0,  .0,  .9,  .9,
+                .8,  2,  .7, .25, .2, .95, .95, .95,
+                .5, .2, -.5,  .6, .6,  .7, -.5, -.5,
+                .3, .3,  .2, 1.2,  1,   2,   2,   2
+            ] + [0]*(128-40) ) * 2 # padd with 0 for undefined biome IDs and duplicate full list to cover 'mutated' biomes
+        # if temp <= 0.15: snow (and ice) possible
+        # if 0.15 < temp < 1: rain possible
+        # if 1 <= temp: no precipitation
+        self.temperature = sum( TEMPERATURE_BY_BIOME[biome] * weight for biome, weight in self.biomes.weightedItems() )
+
+        # fraction of tiles with water at the surface
+        self.surfaceWaterRatio = sum( (self.surfaceHeights - self.groundHeights).view(dtype=bool) ) / float(self.floor.size)
+
+        # could be more strict and only consider grass and dirt
+        FERTILE_BLOCKS = materials.Grass, materials.Dirt, materials["Mycelium"], materials["Podzol"], materials["Coarse"]
+        # typical dirt layers seem to be 3-4 blocks deep
+        self.fertileGroundRatio = sum( self.blockCounts.get(mat, 0) for mat in FERTILE_BLOCKS ) / ( 3. * self.floor.size )
 
     def groundHeightAt(self, pos):
         x, z = self.floor.project(pos)
