@@ -30,4 +30,4 @@ NON_SURFACE_BLOCKS  = set( [materials.Air] + materials.blocksMatching("snow") + 
         materials.blocksByType["FLOOR"] + \
         list(btype for btypeClass in BLOCK_TYPES_GROWTHS for btype in materials.blocksByType[btypeClass]) )
 
-NON_GROUND_BLOCKS = NON_SURFACE_BLOCKS.union( materials.blocksMatching("water") )
+NON_GROUND_BLOCKS = NON_SURFACE_BLOCKS.union( materials.blocksMatching("water") ).union( [ materials.Ice, materials.PackedIce, materials.FrostedIce ] )
