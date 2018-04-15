@@ -153,7 +153,7 @@ class BoundingBox2D:
 
     @property
     def size(self):
-        return self.width, self.height
+        return self.width * self.height
 
     @property
     def positions(self):

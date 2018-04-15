@@ -122,7 +122,7 @@ class WeightDict(dict):
         self.default = default
 
     def random(self):
-        norm = sum(self.values())
+        norm = float(sum(self.values()))
         keys = self.keys()
         if norm:
             return np.random.choice( keys, p = [self[key]/norm for key in keys] )
@@ -144,6 +144,14 @@ class WeightDict(dict):
         for key, weight in self.items():
             if minWeight == weight:
                 return key
+
+    def weight(self, key):
+        if self.isNonZero(key): # also ensures we don't div by 0
+            return self[key] / float(sum(self.values()))
+        return 0
+
+    def weightedItems(self):
+        return ( (key, self.weight(key)) for key in self.keys() )
 
     def isNonZero(self, key):
         return key in self and self[key] != 0
@@ -249,7 +257,7 @@ class Site(object):
 
         NON_SURFACE_IDS = set( block.ID for block in NON_SURFACE_BLOCKS )
         self.surfaceHeights = np.array( list(
-            list( fastHeightAt(level, (x, self.groundHeights[z][x], z), NON_SURFACE_IDS) for x in range(siteBox.minx, siteBox.maxx) )
+            list( fastHeightAt(level, (x, self.groundHeights[z-siteBox.minz][x-siteBox.minx], z), NON_SURFACE_IDS) for x in range(siteBox.minx, siteBox.maxx) )
                 for z in range(siteBox.minz, siteBox.maxz) ) )
 
     def groundHeightAt(self, pos):
