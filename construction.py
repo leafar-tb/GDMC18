@@ -100,13 +100,29 @@ def noop(plot):
 def roadIF(plot):
     return 1 if 'road' in plot.tags else 0
 
+# roads 'degrade' outwards
+ROAD_STYLES = [
+    (.1, materials.Grass),
+    (.2, materials["Path"]),
+    (.4, materials.Gravel),
+    (.6, materials.Cobblestone),
+]
+
 def buildRoad(plot):
+    # pave a narrower, but longer segment
     if plot.width < plot.length:
         paveplot = plot.expand(-1, 0, 0)
+        paveplot = paveplot.expand(0, 0, 1)
     else:
         paveplot = plot.expand(0, 0, -1)
+        paveplot = paveplot.expand(1, 0, 0)
 
     pavemat = plot.site.stoneTypes.mostCommon()
+    for e, mat in ROAD_STYLES:
+        if plot.centricity <= e:
+            pavemat = mat
+            break
+
     for ground in plot.site.surfacePositions(paveplot):
         plot.level.setMaterialAt(ground, pavemat)
 
@@ -119,7 +135,7 @@ register( Builder(roadIF, noop, buildRoad) )
 def houseIF(plot):
     interest = plot.centricity
     if not plot.hasNeighbourWithTag('road'):
-        interest /= 10
+        interest /= 10.
     return interest
 
 def markHouse(plot):
