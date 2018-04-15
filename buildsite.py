@@ -223,10 +223,10 @@ def fastHeightAt(level, (x,y,z), ignoreIDs):
     zInChunk = z & 0xf
     chunkSlice = level.getChunk(cx, cz).Blocks[xInChunk, zInChunk, :]
     # go down until we hit ground
-    while chunkSlice[y] in ignoreIDs:
+    while chunkSlice[y] in ignoreIDs and y > 0:
         y -= 1
     # go up until there is no ground above
-    while chunkSlice[y+1] not in ignoreIDs:
+    while chunkSlice[y+1] not in ignoreIDs and y+1 < level.Height:
         y += 1
     return y
 

@@ -42,10 +42,10 @@ def fill(level, box, mat):
 @injected
 def groundPositionAt(level, (x,y,z), ignoreBlocks=NON_GROUND_BLOCKS):
     # go down until we hit ground
-    while materialAt(level, (x,y,z)) in ignoreBlocks:
+    while materialAt(level, (x,y,z)) in ignoreBlocks and y > 0:
         y -= 1
     # go up until there is no ground above
-    while materialAt(level, (x,y+1,z)) not in ignoreBlocks:
+    while materialAt(level, (x,y+1,z)) not in ignoreBlocks and y+1 < level.Height:
         y += 1
     return Vector(x,y,z)
 

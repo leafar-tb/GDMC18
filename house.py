@@ -19,7 +19,7 @@ class House:
 
     def __init__(self, plot, **kwargs):
         self.plot = plot
-        groundlevel = int( np.mean( [ pos.y for pos in plot.site.surfacePositions(plot) ] ) )
+        groundlevel = int( np.mean( [ plot.site.surfaceHeightAt(pos) for pos in bu.floor(plot).positions ] ) )
         self.box = BoundingBox( (plot.minx, groundlevel, plot.minz), plot.size )
 
         # front is towards the widest road
