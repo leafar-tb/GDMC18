@@ -76,8 +76,9 @@ def buildFoundation(house):
 
 def stoneFloors(house):
     mat = house.site.stoneTypes.random()
-    for flr in house.floors:
-        house.level.fill(flr, mat)
+    house.level.fill(house.floors[0], mat)
+    for flr in house.floors[1:]:
+        house.level.fill(flr.expand(-1, 0, -1), mat)
 
 def plankWalls(house):
     matName = house.site.woodTypes.random()
@@ -85,10 +86,45 @@ def plankWalls(house):
     for wall in bu.walls( house.box ):
         house.level.fill(wall, mat)
 
+LOG_BASE = {
+    "Oak"       : materials[17, 0],
+    "Spruce"    : materials[17, 1],
+    "Birch"     : materials[17, 2],
+    "Jungle"    : materials[17, 3],
+    "Acacia"    : materials[162, 0],
+    "Dark Oak"  : materials[162, 1],
+}
+# data offsets
+LOG_UPRIGHT     =  0
+LOG_EAST_WEST   =  4
+LOG_NORTH_SOUTH =  8
+LOG_ALL_BARK    = 12
+
+LOG_OFFSET_FOR_AXIS = [LOG_EAST_WEST, LOG_UPRIGHT, LOG_NORTH_SOUTH]
+
+def logWalls(house):
+    matName = house.site.woodTypes.random()
+    baseLog = LOG_BASE[matName]
+
+    # simply fill wall first
+    house.level.fill( bu.wall(house.box, Direction.North), (baseLog.ID, baseLog.blockData+LOG_EAST_WEST) )
+    house.level.fill( bu.wall(house.box, Direction.East),  (baseLog.ID, baseLog.blockData+LOG_NORTH_SOUTH) )
+    house.level.fill( bu.wall(house.box, Direction.South), (baseLog.ID, baseLog.blockData+LOG_EAST_WEST) )
+    house.level.fill( bu.wall(house.box, Direction.West),  (baseLog.ID, baseLog.blockData+LOG_NORTH_SOUTH) )
+
+    # then add variation at the corner columns
+    axes = [LOG_EAST_WEST, LOG_NORTH_SOUTH]
+    random.shuffle(axes)
+    for d1 in [Direction.North, Direction.South]:
+        for d2 in [Direction.East, Direction.West]:
+            for pos in bu.wall( bu.wall(house.box, d1), d2).positions:
+                house.level.setMaterialAt(pos, (baseLog.ID, baseLog.blockData+axes[0]))
+                axes[0], axes[1] = axes[1], axes[0]
+
 ####################################
 
 def buildShell(house):
-    plankWalls(house)
+    random.choice([plankWalls, logWalls])(house)
     stoneFloors(house)
 
 ########################################################################
