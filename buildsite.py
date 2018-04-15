@@ -171,9 +171,8 @@ def countMaterialsIn(level, box):
         except ChunkNotPresent:
             continue
         # we first use (ID, data) tuples as material identifiers
-        uniques, counts = np.unique(zip( chunk.Blocks[:, :, box.miny:box.maxy].flat, chunk.Data[:, :, box.miny:box.maxy].flat ), return_counts = True)
-        for ui, ci in zip(uniques, counts):
-            tmpMatDict[ui] += ci
+        for ui in zip( chunk.Blocks[:, :, box.miny:box.maxy].flat, chunk.Data[:, :, box.miny:box.maxy].flat ):
+            tmpMatDict[ui] += 1
 
     # actually, we want to return the material objects (class Block from pymclevel/materials.py)
     # looking up the materials after aggregation significantly reduces the number of queries
@@ -221,7 +220,10 @@ def fastHeightAt(level, (x,y,z), ignoreIDs):
     cz = z >> 4
     xInChunk = x & 0xf
     zInChunk = z & 0xf
-    chunkSlice = level.getChunk(cx, cz).Blocks[xInChunk, zInChunk, :]
+    try:
+        chunkSlice = level.getChunk(cx, cz).Blocks[xInChunk, zInChunk, :]
+    except ChunkNotPresent:
+        return y
     # go down until we hit ground
     while chunkSlice[y] in ignoreIDs and y > 0:
         y -= 1
@@ -262,7 +264,11 @@ class Site(object):
         # gather biome information; biomes are stored as an ID; mapping is found in pymclevel/biome_types.py or online
         tmpBiomeDict = defaultdict(int)
         for cpos in siteBox.chunkPositions:
-            uniques, counts = np.unique(level.getChunk(*cpos).Biomes, return_counts = True)
+            try:
+                chunk = level.getChunk(*cpos)
+            except ChunkNotPresent:
+                continue
+            uniques, counts = np.unique(chunk.Biomes, return_counts = True)
             for ui, ci in zip(uniques, counts):
                 tmpBiomeDict[ui] += ci
         self.biomes = WeightDict(1, tmpBiomeDict) # Biome(1) = Plains

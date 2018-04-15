@@ -63,9 +63,6 @@ def bidAndBuild(site):
         if hasattr(plot, 'builder'):
             plot.builder.build(plot)
 
-    for chunkPos in site.bounds.expand(*SITE_BORDER).chunkPositions:
-        site.level.getChunk(*chunkPos).needsLighting = True
-
 ########################################################################
 
 def requires(plotPredicate):
