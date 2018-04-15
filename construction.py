@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 from myglobals import *
 import boxutils as bu
@@ -153,6 +154,9 @@ crops = [
     materials["Potatoes (Age 7)"]
 ]
 
+# Beetroot, cocoa, cactus, papyrus / sugar cane, melon, pumpkin, mushrooms
+# pastures?: cattle, pigs, sheep, chicken, horses, rabbits
+
 soil = materials["Farmland (Wet, Moisture 7)"]
 
 @requires(notARoad)
@@ -162,9 +166,51 @@ def acreIF(plot):
         return 0
     return plot.excentricity
 
+FENCE_GATE_DATA = {
+    Direction.South : 0,
+    Direction.West  : 1,
+    Direction.North : 2,
+    Direction.East  : 3,
+}
+
+def placeFenceGate(plot, woodName):
+    fenceGateMat = materials[woodName+" Fence Gate (Closed, South)"]
+
+    #TODO align gate to road or town centre?
+    gateDir = random.choice(COMPASS_DIRECTIONS)
+    gateWall = bu.wall2D(plot, gateDir)
+    x, y, z = gateWall[gateWall.width/2, 0]
+    y = plot.site.surfaceHeightAt((x, y, z))
+    plot.level.setMaterialAt((x, y+1, z), (fenceGateMat.ID, FENCE_GATE_DATA[gateDir]) )
+    plot.level.setMaterialAt((x, y+2, z), materials.Air )
+
+def buildWoodFence(plot):
+    woodName = plot.site.woodTypes.random()
+    fenceMat = materials[woodName+" Fence"]
+
+    for wall in bu.walls(plot):
+        for (x,y,z) in plot.site.surfacePositions(wall):
+            plot.level.setMaterialAt((x,y+1,z), fenceMat)
+    placeFenceGate(plot, woodName)
+
+
+def buildHedgeFence(plot):
+    woodName = plot.site.woodTypes.random()
+    hedgeMat = materials[woodName+" Leaves (No Decay)"]
+    fenceGateMat = materials[woodName+" Fence Gate (Closed, South)"]
+
+    for wall in bu.walls(plot):
+        for (x,y,z) in plot.site.surfacePositions(wall):
+            plot.level.setMaterialAt((x,y+1,z), hedgeMat)
+            plot.level.setMaterialAt((x,y+2,z), hedgeMat)
+
+    placeFenceGate(plot, woodName)
+
 def buildAcre(plot):
     crop = np.random.choice(crops)
-    for ground in plot.site.surfacePositions(plot):
+
+    random.choice([buildWoodFence, buildHedgeFence, noop])(plot)
+    for ground in plot.site.surfacePositions(plot.expand(-1, 0, -1)):
         plot.level.setMaterialAt(ground, soil)
         plot.level.setMaterialAt(ground+Direction.Up, crop)
 

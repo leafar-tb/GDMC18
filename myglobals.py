@@ -14,6 +14,8 @@ class Direction:
     Up    = (( 0,  1,  0))
     Down  = (( 0, -1,  0))
 
+COMPASS_DIRECTIONS = Direction.North, Direction.East, Direction.South, Direction.West
+
 BLOCK_TYPES = [
     u'THINSLICE', u'ENDER_PORTAL_FRAME', 'NORMAL', u'LADDER', u'PISTON_HEAD',
     u'NETHER_WART', u'BED', u'WALLSIGN', u'SOLID_PANE', u'CHEST', u'HUGE_MUSHROOM', u'PORTAL',
