@@ -4,6 +4,7 @@ import numpy as np
 from collections import defaultdict
 from types import FunctionType
 from pymclevel import BoundingBox, ChunkNotPresent
+from pymclevel.biome_types import biome_types
 
 from myglobals import *
 import boxutils as bu
@@ -237,16 +238,9 @@ class Site(object):
     def __init__(self, level, siteBox, registrar=splitIntoPlots, **kwargs):
         self.level = level
         self.bounds = siteBox
-        self.blockCounts = countMaterialsIn( level, siteBox.expand(*siteBox.size) )
-
-        for key in DefaultSiteInfo:
-            val = kwargs.get(key, DefaultSiteInfo[key])
-            if isinstance(val, FunctionType):
-                val = val(self)
-            setattr( self, key, val )
-
-        self.plots = registrar(self)
-        fillInPlotNeighbours(self.plots)
+        # for the block statistics, expand vertically, so we get a better view of above- and underground features
+        #? could also expand horizontally, to consider surroundings
+        self.blockCounts = countMaterialsIn( level, siteBox.expand(dx=0, dy=16, dz=0) )
 
         # cache ground/surface heights for faster access
         self.floor = bu.floor2D(siteBox)
@@ -272,6 +266,7 @@ class Site(object):
             for ui, ci in zip(uniques, counts):
                 tmpBiomeDict[ui] += ci
         self.biomes = WeightDict(1, tmpBiomeDict) # Biome(1) = Plains
+        print 'biomes =', map( lambda bID: "%s(%d): %d" % (biome_types[bID], bID, self.biomes[bID]), self.biomes )
 
         # compile temperature info; range is [-0.5, 2.0]
         # mostly taken from from MC wiki; actual temperature also linked to height
@@ -286,14 +281,29 @@ class Site(object):
         # if 0.15 < temp < 1: rain possible
         # if 1 <= temp: no precipitation
         self.temperature = sum( TEMPERATURE_BY_BIOME[biome] * weight for biome, weight in self.biomes.weightedItems() )
+        print 'temperature =', self.temperature
 
         # fraction of tiles with water at the surface
-        self.surfaceWaterRatio = sum( (self.surfaceHeights - self.groundHeights).view(dtype=bool) ) / float(self.floor.size)
+        self.surfaceWaterRatio = np.sum( (self.surfaceHeights - self.groundHeights).view(dtype=bool) ) / float(self.floor.size)
+        print 'surfaceWaterRatio =', self.surfaceWaterRatio
 
         # could be more strict and only consider grass and dirt
         FERTILE_BLOCKS = materials.Grass, materials.Dirt, materials["Mycelium"], materials["Podzol"], materials["Coarse"]
-        # typical dirt layers seem to be 3-4 blocks deep
-        self.fertileGroundRatio = sum( self.blockCounts.get(mat, 0) for mat in FERTILE_BLOCKS ) / ( 3. * self.floor.size )
+        # typical dirt layers seem to be 3-4 blocks deep; !! normalise against floor area of blockCount
+        self.fertileGroundRatio = sum( self.blockCounts.get(mat, 0) for mat in FERTILE_BLOCKS ) / ( 3.5 * self.floor.size )
+        print 'fertileGroundRatio =', self.fertileGroundRatio
+
+        # set up general site infos
+        for key in DefaultSiteInfo:
+            val = kwargs.get(key, DefaultSiteInfo[key])
+            if isinstance(val, FunctionType):
+                val = val(self)
+                print key, '=', val
+            setattr( self, key, val )
+
+        # split into plots
+        self.plots = registrar(self)
+        fillInPlotNeighbours(self.plots)
 
     def groundHeightAt(self, pos):
         x, z = self.floor.project(pos)
