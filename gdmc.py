@@ -11,7 +11,7 @@ from construction import bidAndBuild
 
 # name to show in filter list
 displayName = "Settlement Generator"
-
+P_SEASON = "Season"
 P_OVERRIDE_SIZE = "Override Selection Size"
 P_WIDTH = "Width"
 P_LENGTH = "Length"
@@ -19,6 +19,7 @@ P_HEIGHT = "Height"
 
 inputs = (
 	(displayName, "label"),
+	(P_SEASON, ('random', 'spring', 'summer', 'autumn', 'winter')),
 	("\nUse these settings, to make sure the selection has a minimum size. (Mostly dev convenience)", "label"),
 	(P_OVERRIDE_SIZE, True),
 	(P_WIDTH, 128),
@@ -59,7 +60,11 @@ def perform(level, box, options):
 	if box.length < options[P_LENGTH]:
 	    box = box.expand( 0, 0, (options[P_LENGTH] - box.length) / 2 )
 
-    site = Site(level, box)
+    siteOptions = {}
+    if options[P_SEASON] != 'random':
+	siteOptions['season'] = options[P_SEASON]
+
+    site = Site(level, box, **siteOptions)
 
     bidAndBuild(site)
 

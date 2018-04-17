@@ -8,6 +8,7 @@ from pymclevel.biome_types import biome_types
 
 from myglobals import *
 import boxutils as bu
+from farming import chooseCrops
 
 ########################################################################
 
@@ -214,6 +215,7 @@ DefaultSiteInfo = {
     'season'        : lambda _: random.choice(['spring', 'summer', 'autumn', 'winter']),
     'minPlotDim'    : 5,
     'maxPlotDim'    : 20,
+    'crops'         : chooseCrops,
 }
 
 def fastHeightAt(level, (x,y,z), ignoreIDs):
