@@ -142,7 +142,7 @@ def houseIF(plot):
 def markHouse(plot):
     plot.tags.append('house')
 
-from house import buildHouse
+from housing import buildHouse
 
 register( Builder(houseIF, markHouse, buildHouse) )
 
