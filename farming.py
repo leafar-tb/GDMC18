@@ -1,5 +1,6 @@
 import random
 import math
+from pymclevel import BoundingBox
 
 from myglobals import *
 import boxutils as bu
@@ -7,7 +8,7 @@ from types import MethodType
 
 class Crop:
 
-    def __init__(self, minTemperature, maxTemperature, minFertility, age0Mat, maxAge, buildFun, extraCondition=None):
+    def __init__(self, minTemperature, maxTemperature, minFertility, age0Mat, maxAge, buildFun, extraCondition=None, name=None):
         self.minTemperature = minTemperature
         self.maxTemperature = maxTemperature
         self.minFertility = minFertility
@@ -15,6 +16,7 @@ class Crop:
         self.maxAge = maxAge
         self.grow = MethodType(buildFun, self) # buildFun(crop, plot) is exposed as self.grow(plot)
         self.extraCondition = extraCondition
+        self.name = name if name is not None else self.age0Mat.name.split(' ')[0]
 
     def canGrow(self, site):
         if self.extraCondition is None or self.extraCondition(site):
@@ -22,7 +24,7 @@ class Crop:
         return False
 
     def __str__(self):
-        return self.age0Mat.name.split(' ')[0]
+        return self.name
 
     def __repr__(self):
         return str(self)
@@ -103,6 +105,56 @@ def standardField(crop, plot):
         plot.level.setMaterialAt(ground+Direction.Up, random.choice(cropMats))
 
 ########################################################################
+
+def chebyshevDist((x1,y1), (x2,y2)):
+    return max( abs(x1-x2), abs(y1-y2) )
+
+def randomSpacedPositions(plot, minSpacing):
+    entityArea = (2*minSpacing + 1)**2 # square with center tile and minSpacing free tiles in both directions
+    floorArea = plot.width * plot.length
+    entityCount = floorArea / float (entityArea)
+
+    positions = [ (random.randrange(plot.width), random.randrange(plot.length)) for _ in range(int( entityCount*2 )) ]
+
+    def countConflicts(pos):
+        return sum( chebyshevDist(pos, other) <= minSpacing for other in positions if other is not pos )
+
+    while any( countConflicts(pos) > 0 for pos in positions ):
+        positions.remove( max( positions, key=countConflicts ) )
+
+    plotFloor = bu.floor2D(plot)
+    return [ plotFloor[position] for position in positions ]
+
+def placeTreeAt(site, position, woodName, trunkHeight):
+    woodMat = materials[woodName+" Wood (Upright)"]
+    leafMat = materials[woodName+" Leaves (No Decay)"]
+    (x,y,z) = site.surfacePositionAt(position)
+
+    crown = BoundingBox((x-1, y+trunkHeight, z-1), (3, 2, 3))
+    site.level.fill(crown, leafMat)
+
+    for h in range(trunkHeight):
+        site.level.setMaterialAt((x,y+1+h,z), woodMat)
+
+def orchard(crop, plot): # only works for cocoa right now
+    for pos in randomSpacedPositions(plot.expand(-1,0,-1), 1):
+        height = random.choice( (3,4,4,4,4,5,5) )
+        placeTreeAt(plot.site, pos, 'Jungle', height )
+
+        def growAtHeight(h):
+            surfPos = plot.site.surfacePositionAt(pos)
+            growDir = random.choice(COMPASS_DIRECTIONS)
+            growPos = surfPos + (0, h, 0) + growDir
+            fruitMat = crop.age0Mat[growDir]
+            age = random.randrange(0, crop.maxAge+1)
+            plot.level.setMaterialAt( growPos, (fruitMat.ID, fruitMat.blockData + age*4) )
+
+        if height > 3 and random.random() < .75:
+            growAtHeight(3)
+        if height > 4 and random.random() < .75:
+            growAtHeight(4)
+
+########################################################################
 # crop definitions
 ########################################################################
 
@@ -142,13 +194,29 @@ BEETROOT = Crop(
     buildFun        = standardField
 )
 
+COCOA = Crop(
+    minTemperature  = .8, # jungle is ~.95
+    maxTemperature  = 1.2,
+    minFertility    = .6,
+    age0Mat         = {
+        Direction.South : materials["Cocoa (Age 0, South)"],
+        Direction.West : materials["Cocoa (Age 0, West)"],
+        Direction.North : materials["Cocoa (Age 0, North)"],
+        Direction.East : materials["Cocoa (Age 0, East)"],
+        },
+    maxAge          = 2,
+    buildFun        = orchard,
+    extraCondition  = lambda site: site.woodTypes.isNonZero('Jungle'),
+    name            = "Cocoa",
+)
+
 ########################################################################
 ########################################################################
 
-#TODO cocoa, cactus, papyrus / sugar cane, melon, pumpkin
+#TODO cactus, papyrus / sugar cane, melon, pumpkin
 #? mushrooms, flowers, hay
 #? pastures: cattle, pigs, sheep, chicken, horses, rabbits
-ALL_CROPS = WHEAT, POTATOES, CARROTS, BEETROOT
+ALL_CROPS = WHEAT, POTATOES, CARROTS, BEETROOT, COCOA
 
 def chooseCrops(site):
     return list( filter(lambda crop: crop.canGrow(site), ALL_CROPS) )
