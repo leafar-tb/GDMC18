@@ -209,14 +209,14 @@ def weightDictFor(default, blockTypes):
 
 ########################################################################
 
-DefaultSiteInfo = {
-    'stoneTypes'    : weightDictFor(materials.Stone, STONE_TYPES),
-    'woodTypes'     : woodTypes,
-    'season'        : lambda _: random.choice(['spring', 'summer', 'autumn', 'winter']),
-    'minPlotDim'    : 5,
-    'maxPlotDim'    : 20,
-    'crops'         : chooseCrops,
-}
+DefaultSiteInfo = (
+    ('stoneTypes'    , weightDictFor(materials.Stone, STONE_TYPES)),
+    ('woodTypes'     , woodTypes),
+    ('season'        , lambda _: random.choice(['spring', 'summer', 'autumn', 'winter'])),
+    ('minPlotDim'    , 5),
+    ('maxPlotDim'    , 20),
+    ('crops'         , chooseCrops),
+)
 
 def fastHeightAt(level, (x,y,z), ignoreIDs):
     cx = x >> 4
@@ -296,8 +296,8 @@ class Site(object):
         print 'fertileGroundRatio =', self.fertileGroundRatio
 
         # set up general site infos
-        for key in DefaultSiteInfo:
-            val = kwargs.get(key, DefaultSiteInfo[key])
+        for key, val in DefaultSiteInfo:
+            val = kwargs.get(key, val)
             if isinstance(val, FunctionType):
                 val = val(self)
                 print key, '=', val
