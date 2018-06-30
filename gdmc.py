@@ -20,11 +20,6 @@ P_HEIGHT = "Height"
 inputs = (
 	(displayName, "label"),
 	(P_SEASON, ('random', 'spring', 'summer', 'autumn', 'winter')),
-	("\nUse these settings, to make sure the selection has a minimum size. (Mostly dev convenience)", "label"),
-	(P_OVERRIDE_SIZE, True),
-	(P_WIDTH, 128),
-	(P_LENGTH, 128),
-	(P_HEIGHT, 16),
     )
 
 def profile(func):
@@ -50,15 +45,6 @@ def takeTime(func):
 @takeTime
 def perform(level, box, options):
     LVinject(level)
-
-    if options[P_OVERRIDE_SIZE]:
-	# expand adds on both ends, so we take the half; possible one off from rounding doesn't matter
-	if box.width < options[P_WIDTH]:
-	    box = box.expand( (options[P_WIDTH] - box.width) / 2, 0, 0 )
-	if box.height < options[P_HEIGHT]:
-	    box = box.expand( 0, (options[P_HEIGHT] - box.height) / 2, 0 )
-	if box.length < options[P_LENGTH]:
-	    box = box.expand( 0, 0, (options[P_LENGTH] - box.length) / 2 )
 
     siteOptions = {}
     if options[P_SEASON] != 'random':
