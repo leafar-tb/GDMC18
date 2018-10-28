@@ -7,10 +7,16 @@ import boxutils as bu
 
 def buildHouse(plot, **kwargs):
     house = House(plot, **kwargs)
-    buildFoundation(house)
-    buildShell(house)
-    buildRoof(house)
-    buildInterior(house)
+
+    buildMat = random.choice(plot.site.buildMats)
+    buildFoundation(buildMat, house)
+
+    buildMat = random.choice(plot.site.buildMats)
+    buildShell(buildMat, house)
+
+    buildMat = random.choice(plot.site.buildMats)
+    buildRoof(buildMat, house)
+    buildInterior(buildMat, house)
 
 ########################################################################
 
@@ -56,83 +62,86 @@ class House:
 # Foundation
 ########################################################################
 
-def filledFoundation(house):
-    fillMat = house.site.stoneTypes.mostCommon()
+def filledFoundation(buildMat, house):
+    fillMat = buildMat.getBaseBlock()
 
     for pos in bu.floor( house.box ).positions:
         ground = house.site.groundPositionAt(pos)
         for y in range(ground.y+1, pos[1]):
             house.level.setMaterialAt((pos[0], y, pos[2]), fillMat)
 
+def pillarFoundation(buildMat, house):
+    fillMat = buildMat.getBaseBlock()
+
+    for z in house.box.minz, house.box.maxz - 1:
+        for x in house.box.minx, house.box.maxx - 1:
+            for y in range(house.site.groundHeightAt((x, 0, z)) + 1, house.box.miny):
+                house.level.setMaterialAt((x, y, z), fillMat)
+
 ####################################
 
-def buildFoundation(house):
-    #TODO different foundations; e.g. poles over water
-    filledFoundation(house)
+def buildFoundation(buildMat, house):
+    random.choice([filledFoundation, pillarFoundation])(buildMat, house)
 
 ########################################################################
 # Building Shell (Walls and Floors)
 ########################################################################
 
-def stoneFloors(house):
-    mat = house.site.stoneTypes.random()
+# only fill inside the house
+def innerFloors(buildMat, house):
+    if house.box.size.x > house.box.size.z:
+        orientation = Orientation.EastWest
+    else:
+        orientation = Orientation.NorthSouth
+    mat = buildMat.getBaseBlock(orientation)
+
     house.level.fill(house.floors[0], mat)
     for flr in house.floors[1:]:
         house.level.fill(flr.expand(-1, 0, -1), mat)
 
-def plankWalls(house):
-    matName = house.site.woodTypes.random()
-    mat = materials[matName+" Wood Planks"]
-    for wall in bu.walls( house.box ):
-        house.level.fill(wall, mat)
+# visible through the walls
+def outerFloors(buildMat, house):
+    if house.box.size.x > house.box.size.z:
+        orientation = Orientation.EastWest
+    else:
+        orientation = Orientation.NorthSouth
+    mat = buildMat.getBaseBlock(orientation)
 
-LOG_BASE = {
-    "Oak"       : materials[17, 0],
-    "Spruce"    : materials[17, 1],
-    "Birch"     : materials[17, 2],
-    "Jungle"    : materials[17, 3],
-    "Acacia"    : materials[162, 0],
-    "Dark Oak"  : materials[162, 1],
-}
-# data offsets
-LOG_UPRIGHT     =  0
-LOG_EAST_WEST   =  4
-LOG_NORTH_SOUTH =  8
-LOG_ALL_BARK    = 12
+    house.level.fill(house.floors[0], mat)
+    for flr in house.floors[1:]:
+        house.level.fill(flr, mat)
 
-LOG_OFFSET_FOR_AXIS = [LOG_EAST_WEST, LOG_UPRIGHT, LOG_NORTH_SOUTH]
-
-def logWalls(house):
-    matName = house.site.woodTypes.random()
-    baseLog = LOG_BASE[matName]
+def orientedWalls(buildMat, house):
+    matNS = buildMat.getBaseBlock(Orientation.NorthSouth)
+    matEW = buildMat.getBaseBlock(Orientation.EastWest)
 
     # simply fill wall first
-    house.level.fill( bu.wall(house.box, Direction.North), (baseLog.ID, baseLog.blockData+LOG_EAST_WEST) )
-    house.level.fill( bu.wall(house.box, Direction.East),  (baseLog.ID, baseLog.blockData+LOG_NORTH_SOUTH) )
-    house.level.fill( bu.wall(house.box, Direction.South), (baseLog.ID, baseLog.blockData+LOG_EAST_WEST) )
-    house.level.fill( bu.wall(house.box, Direction.West),  (baseLog.ID, baseLog.blockData+LOG_NORTH_SOUTH) )
+    house.level.fill( bu.wall(house.box, Direction.North), matEW )
+    house.level.fill( bu.wall(house.box, Direction.East),  matNS )
+    house.level.fill( bu.wall(house.box, Direction.South), matEW )
+    house.level.fill( bu.wall(house.box, Direction.West),  matNS )
 
     # then add variation at the corner columns
-    axes = [LOG_EAST_WEST, LOG_NORTH_SOUTH]
+    axes = [matEW, matNS]
     random.shuffle(axes)
     for d1 in [Direction.North, Direction.South]:
         for d2 in [Direction.East, Direction.West]:
             for pos in bu.wall( bu.wall(house.box, d1), d2).positions:
-                house.level.setMaterialAt(pos, (baseLog.ID, baseLog.blockData+axes[0]))
+                house.level.setMaterialAt(pos, axes[0])
                 axes[0], axes[1] = axes[1], axes[0]
 
 ####################################
 
-def buildShell(house):
-    random.choice([plankWalls, logWalls])(house)
-    stoneFloors(house)
+def buildShell(buildMat, house):
+    orientedWalls(buildMat, house)
+    random.choice([innerFloors, outerFloors])(buildMat, house)
 
 ########################################################################
 # Roof
 ########################################################################
 
-def flatRoof(house, mat, *args):
-    house.level.fill(house.roof, mat)
+def flatRoof(buildMat, house):
+    house.level.fill(house.roof, buildMat.getBaseBlock())
 
 STAIR_DIRECTION_DATA = {
     Direction.East  : 1,
@@ -141,7 +150,10 @@ STAIR_DIRECTION_DATA = {
     Direction.North : 2
 }
 
-def stairRoof(house, innerMat, stairMatID, fill=False):
+def stairRoof(buildMat, house):
+    innerMat = buildMat.getBaseBlock()
+    stairMatID = buildMat.stairID
+
     if house.front in [Direction.North, Direction.South]:
         steps = -1, 0, 0
         sides = [Direction.East, Direction.West]
@@ -154,18 +166,15 @@ def stairRoof(house, innerMat, stairMatID, fill=False):
     roof = bu.expandMax(house.roof, dy=100)
     while roof.volume > 0 and min(roof.width, roof.length) > 1:
         layer, roof = bu.splitAlongAxisAt(roof, 1, 1)
-        if fill:
-            house.level.fill(layer.expand(*steps), innerMat)
-        else:
-            for side in fronts:
-                house.level.fill( bu.wall(layer, side), innerMat )
+        for side in fronts:
+            house.level.fill( bu.wall(layer, side), innerMat )
 
         for side in sides:
             house.level.fill( bu.wall(layer, side), (stairMatID, STAIR_DIRECTION_DATA[side]) )
 
         roof = roof.expand(*steps)
 
-    if not fill and min(roof.width, roof.length) == 1:
+    if min(roof.width, roof.length) == 1:
         layer, _ = bu.splitAlongAxisAt(roof, 1, 1)
         layer = bu.move(layer, dy=-1)
         house.level.fill( layer, innerMat )
@@ -174,17 +183,8 @@ def stairRoof(house, innerMat, stairMatID, fill=False):
 
 ROOF_TYPES = [stairRoof, flatRoof]
 
-def buildRoof(house):
-    coin = random.random()
-    if coin < .5:
-        woodType = house.site.woodTypes.random()
-        blockMat = materials[woodType+" Wood Planks"]
-        stairMatID = materials[woodType+" Wood Stairs (Bottom, East)"].ID
-    else:
-        blockMat = materials["Bricks"]
-        stairMatID = materials["Brick Stairs (Bottom, East)"].ID
-
-    random.choice(ROOF_TYPES)(house, blockMat, stairMatID)
+def buildRoof(buildMat, house):
+    random.choice(ROOF_TYPES)(buildMat, house)
 
 ########################################################################
 # Interior Design
@@ -235,6 +235,6 @@ def singleRoomStoreys(house):
 
 ####################################
 
-def buildInterior(house):
+def buildInterior(buildMat, house):
     #TODO actual room layout and design
     singleRoomStoreys(house)

@@ -9,6 +9,7 @@ from pymclevel.biome_types import biome_types
 from myglobals import *
 import boxutils as bu
 from farming import chooseCrops
+from building_materials import getBuildMats
 
 ########################################################################
 
@@ -117,52 +118,6 @@ def splitWithGap(box, axis, position, gapWidth):
 
 ########################################################################
 
-class WeightDict(dict):
-
-    def __init__(self, default, basedict={}):
-        super(WeightDict, self).__init__(basedict)
-        self.default = default
-
-    def random(self):
-        norm = float(sum(self.values()))
-        keys = self.keys()
-        if norm:
-            return np.random.choice( keys, p = [self[key]/norm for key in keys] )
-        else:
-            return self.default
-
-    def mostCommon(self):
-        if not self or not sum(self.values()):
-            return self.default
-        maxWeight = max(self.values())
-        for key, weight in self.items():
-            if maxWeight == weight:
-                return key
-
-    def leastCommon(self):
-        if not self or not sum(self.values()):
-            return self.default
-        minWeight = min(self.values())
-        for key, weight in self.items():
-            if minWeight == weight:
-                return key
-
-    def weight(self, key):
-        if self.isNonZero(key): # also ensures we don't div by 0
-            return self[key] / float(sum(self.values()))
-        return 0
-
-    def weightedItems(self):
-        return ( (key, self.weight(key)) for key in self.keys() )
-
-    def isNonZero(self, key):
-        return key in self and self[key] != 0
-
-    def hasNonZero(self):
-        return any( weight != 0 for weight in self.values() )
-
-########################################################################
-
 def countMaterialsIn(level, box):
     # counting block by block is too much overhead, so we process full chunks
     # this approach may not match the given bounds exactly, though
@@ -196,7 +151,7 @@ def woodTypes(site):
             counts[type] += site.blockCounts[material]
     return WeightDict('Oak', counts)
 
-STONE_TYPES = [ materials[name] for name in ['Stone', 'Granite', 'Diorite', 'Andesite', 'Sandstone', 'Cobblestone', 'Moss Stone'] ]
+STONE_TYPES = [ materials[name] for name in ['Stone', 'Granite', 'Diorite', 'Andesite', 'Sandstone', 'Cobblestone'] ] # , 'Moss Stone'
 
 def weightDictFor(default, blockTypes):
     def apply(site):
@@ -216,6 +171,7 @@ DefaultSiteInfo = (
     ('minPlotDim'    , 5),
     ('maxPlotDim'    , 20),
     ('crops'         , chooseCrops),
+    ('buildMats'     , getBuildMats),
 )
 
 def fastHeightAt(level, (x,y,z), ignoreIDs):
