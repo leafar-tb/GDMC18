@@ -10,7 +10,7 @@ class DefaultMatBase:
 class StoneBase(DefaultMatBase):
     @staticmethod
     def getForSite(site):
-        STONE_TYPES = [ materials[name] for name in ['Stone', 'Granite', 'Diorite', 'Andesite', 'Sandstone'] ]
+        STONE_TYPES = [ materials[name] for name in ['Stone', 'Granite', 'Diorite', 'Andesite'] ]
         return [ Stone(stoneType) for stoneType in STONE_TYPES if site.stoneTypes.isNonZero(stoneType) ]
 
 class Stone(StoneBase):
@@ -72,6 +72,9 @@ class WoodPlanks(DefaultMatBase):
 ########################################################################
 
 class SandstoneBase(DefaultMatBase):
+
+    self.stairID = materials[prefix + "Sandstone Stairs (Bottom, East)"].ID
+
     @classmethod
     def getForSite(cls, site):
         lst = []
@@ -84,12 +87,14 @@ class SandstoneBase(DefaultMatBase):
 class Sandstone(SandstoneBase):
     def __init__(self, prefix):
         self.baseBlock = materials[prefix + "Sandstone"]
-        self.stairID = materials[prefix + "Sandstone Stairs (Bottom, East)"].ID
 
-class Sandstone(SandstoneBase):
+class SmoothSandstone(SandstoneBase):
     def __init__(self, prefix):
         self.baseBlock = materials["Smooth " + prefix + "Sandstone"]
-        self.stairID = materials[prefix + "Sandstone Stairs (Bottom, East)"].ID
+
+class ChiseledSandstone(SandstoneBase):
+    def __init__(self, prefix):
+        self.baseBlock = materials["Chiseled " + prefix + "Sandstone"]
 
 ########################################################################
 
@@ -111,6 +116,6 @@ class Bricks(DefaultMatBase):
 
 def getBuildMats(site):
     materialList = []
-    for materialType in Stone, PolishedStone, Wood, WoodPlanks, Sandstone, Bricks:
+    for materialType in Stone, PolishedStone, Wood, WoodPlanks, Sandstone, SmoothSandstone, ChiseledSandstone, Bricks:
         materialList.extend( materialType.getForSite(site) )
     return materialList
