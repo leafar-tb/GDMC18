@@ -9,7 +9,7 @@ from pymclevel.biome_types import biome_types
 from myglobals import *
 import boxutils as bu
 from farming import chooseCrops
-from building_materials import getBuildMats
+from building_materials import getBuildMats, Wood
 
 ########################################################################
 
@@ -172,6 +172,7 @@ DefaultSiteInfo = (
     ('maxPlotDim'    , 20),
     ('crops'         , chooseCrops),
     ('buildMats'     , getBuildMats),
+    ('buildMatsToValue', lambda site: WeightDict(Wood("Oak", 1), ((mat, 1./mat.value) for mat in site.buildMats))),
 )
 
 def fastHeightAt(level, (x,y,z), ignoreIDs):

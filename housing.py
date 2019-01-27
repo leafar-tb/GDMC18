@@ -8,13 +8,13 @@ import boxutils as bu
 def buildHouse(plot, **kwargs):
     house = House(plot, **kwargs)
 
-    buildMat = random.choice(plot.site.buildMats)
+    buildMat = plot.site.buildMatsToValue.random()
     buildFoundation(buildMat, house)
 
-    buildMat = random.choice(plot.site.buildMats)
+    buildMat = plot.site.buildMatsToValue.random()
     buildShell(buildMat, house)
 
-    buildMat = random.choice(plot.site.buildMats)
+    buildMat = plot.site.buildMatsToValue.random()
     buildRoof(buildMat, house)
     buildInterior(buildMat, house)
 
